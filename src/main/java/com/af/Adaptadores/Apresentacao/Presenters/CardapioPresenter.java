@@ -1,5 +1,4 @@
-﻿package com.af.Adaptadores.Apresentacao.Presenters;
-
+package com.af.Adaptadores.Apresentacao.Presenters;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -58,4 +57,3 @@ public class CardapioPresenter {
         itens.add(item);
     }
 }
-

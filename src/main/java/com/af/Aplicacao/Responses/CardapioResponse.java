@@ -1,5 +1,4 @@
-﻿package com.af.Aplicacao.Responses;
-
+package com.af.Aplicacao.Responses;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -24,4 +23,3 @@ public class CardapioResponse {
         return sugestoesDoChef;
     }
 }
-

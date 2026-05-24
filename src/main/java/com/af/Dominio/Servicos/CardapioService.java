@@ -1,7 +1,6 @@
-﻿package com.af.Dominio.Servicos;
+package com.af.Dominio.Servicos;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,4 +31,3 @@ public class CardapioService {
         return cardapioRepository.indicacoesDoChef();
     }
 }
-
