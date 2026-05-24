@@ -1,22 +1,22 @@
 package com.af.Adaptadores.Dados;
 
-import com.af.Dominio.Dados.PedidoRepository;
-import com.af.Dominio.Entidades.Cliente;
-import com.af.Dominio.Entidades.Pedido;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.stereotype.Repository;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Repository;
+
+import com.af.Dominio.Dados.PedidoRepository;
+import com.af.Dominio.Entidades.Cliente;
+import com.af.Dominio.Entidades.Pedido;
 
 @Repository
 public class PedidoRepositoryJDBC implements PedidoRepository {
@@ -36,7 +36,7 @@ public class PedidoRepositoryJDBC implements PedidoRepository {
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"ID"});
             ps.setString(1, p.getCliente() != null ? p.getCliente().getCpf() : null);
             ps.setObject(2, p.getDataHoraPagamento());
             ps.setString(3, p.getStatus().toString());
@@ -47,9 +47,10 @@ public class PedidoRepositoryJDBC implements PedidoRepository {
             return ps;
         }, keyHolder);
 
-        if (keyHolder.getKey() != null) {
-            p.setId(keyHolder.getKey().longValue());
-        }
+        if (keyHolder.getKeys() != null && keyHolder.getKeys().get("ID") != null) {
+    Number idGerado = (Number) keyHolder.getKeys().get("ID");
+    p.setId(idGerado.longValue());
+}
 
         return p;
     }
