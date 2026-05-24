@@ -1,4 +1,4 @@
-﻿package com.af.Adaptadores.Apresentacao;
+package com.af.Adaptadores.Apresentacao;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
