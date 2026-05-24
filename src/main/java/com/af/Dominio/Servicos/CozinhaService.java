@@ -1,4 +1,4 @@
-﻿package com.af.Dominio.Servicos;
+package com.af.Dominio.Servicos;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.af.Dominio.Entidades.Pedido;
 
-public class CozinhaService implements ICozinhaService {
+public class CozinhaService {
     private Queue<Pedido> filaEntrada;
     private Pedido emPreparacao;
     private Queue<Pedido> filaSaida;
@@ -26,11 +26,10 @@ public class CozinhaService implements ICozinhaService {
         pedido.setStatus(Pedido.Status.PREPARACAO);
         emPreparacao = pedido;
         System.out.println("Pedido em preparacao: "+pedido);
-        // Agenda pedidoPronto para ser chamado em 5 segundos
+        // Agenda pedidoPronto para ser chamado em 2 segundos
         scheduler.schedule(() -> pedidoPronto(), 5, TimeUnit.SECONDS);
     }
 
-    @Override
     public synchronized void chegadaDePedido(Pedido p) {
         filaEntrada.add(p);
         System.out.println("Pedido na fila de entrada: "+p);
@@ -39,17 +38,15 @@ public class CozinhaService implements ICozinhaService {
         }
     }
 
-    @Override
     public synchronized void pedidoPronto() {
         emPreparacao.setStatus(Pedido.Status.PRONTO);
         filaSaida.add(emPreparacao);
         System.out.println("Pedido na fila de saida: "+emPreparacao);
         emPreparacao = null;
-        // Se tem pedidos na fila, programa a preparaÃ§Ã£o para daqui a 1 segundo
+        // Se tem pedidos na fila, programa a preparação para daqui a 1 segundo
         if (!filaEntrada.isEmpty()){
             Pedido prox = filaEntrada.poll();
             scheduler.schedule(() -> colocaEmPreparacao(prox), 1, TimeUnit.SECONDS);
         }
     }
 }
-
