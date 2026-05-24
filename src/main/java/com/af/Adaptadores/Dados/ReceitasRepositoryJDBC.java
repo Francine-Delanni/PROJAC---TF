@@ -1,4 +1,4 @@
-﻿
+
 package com.af.Adaptadores.Dados;
 
 import java.util.List;

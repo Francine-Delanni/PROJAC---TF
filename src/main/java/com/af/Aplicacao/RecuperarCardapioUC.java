@@ -1,4 +1,4 @@
-﻿package com.af.Aplicacao;
+package com.af.Aplicacao;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-﻿package com.af.Dominio.Dados;
+package com.af.Dominio.Dados;
 
 import com.af.Dominio.Entidades.Receita;
 

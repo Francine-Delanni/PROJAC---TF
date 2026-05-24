@@ -1,4 +1,4 @@
-﻿package com.af.Dominio.Entidades;
+package com.af.Dominio.Entidades;
 
 public class Produto {
     private long id;

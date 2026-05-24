@@ -1,4 +1,4 @@
-﻿package com.af.Dominio.Entidades;
+package com.af.Dominio.Entidades;
 
 import java.util.List;
 

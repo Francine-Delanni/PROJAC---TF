@@ -1,4 +1,4 @@
-﻿package com.af.Aplicacao.Responses;
+package com.af.Aplicacao.Responses;
 
 import java.util.List;
 
