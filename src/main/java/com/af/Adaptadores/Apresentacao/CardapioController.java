@@ -38,8 +38,7 @@ public class CardapioController {
         Set<Long> sugestoes = new HashSet<>(response.getSugestoesDoChef()
                 .stream().map(Produto::getId).toList());
 
-        CardapioPresenter presenter = new CardapioPresenter(response.getCardapio().getTitulo());
-        for (Produto produto : response.getCardapio().getProdutos()) {
+        CardapioPresenter presenter = new CardapioPresenter(response.getCardapio().getCabecalhoCardapio().titulo());        for (Produto produto : response.getCardapio().getProdutos()) {
             presenter.insereItem(produto.getId(), produto.getDescricao(),
                     produto.getPreco(), sugestoes.contains(produto.getId()));
         }
