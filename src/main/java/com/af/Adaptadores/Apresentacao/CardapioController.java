@@ -27,6 +27,11 @@ public class CardapioController {
         this.recuperaListaCardapiosUC = recuperaListaCardapiosUC;
     }
 
+    @GetMapping({"", "/", "/atual"})
+    public ResponseEntity<CardapioPresenter> recuperarCardapioAtual() {
+        return recuperarCardapio(1L);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<CardapioPresenter> recuperarCardapio(@PathVariable long id) {
         CardapioResponse response = recuperarCardapioUC.run(id);
