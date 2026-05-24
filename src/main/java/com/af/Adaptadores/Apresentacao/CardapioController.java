@@ -1,14 +1,4 @@
-﻿package com.af.Adaptadores.Apresentacao;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+package com.af.Adaptadores.Apresentacao;
 
 import com.af.Adaptadores.Apresentacao.Presenters.CabecalhoCardapioPresenter;
 import com.af.Adaptadores.Apresentacao.Presenters.CardapioPresenter;
@@ -16,42 +6,48 @@ import com.af.Aplicacao.RecuperaListaCardapiosUC;
 import com.af.Aplicacao.RecuperarCardapioUC;
 import com.af.Aplicacao.Responses.CardapioResponse;
 import com.af.Dominio.Entidades.Produto;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @RestController
-@RequestMapping("/cardapio")
+@RequestMapping("/api/cardapio")
+@CrossOrigin("*")
 public class CardapioController {
-    private RecuperarCardapioUC recuperaCardapioUC;
-    private RecuperaListaCardapiosUC recuperaListaCardapioUC;
 
-    public CardapioController(RecuperarCardapioUC recuperaCardapioUC,
-                              RecuperaListaCardapiosUC recuperaListaCardapioUC) {
-        this.recuperaCardapioUC = recuperaCardapioUC;
-        this.recuperaListaCardapioUC = recuperaListaCardapioUC;
+    private final RecuperarCardapioUC recuperarCardapioUC;
+    private final RecuperaListaCardapiosUC recuperaListaCardapiosUC;
+
+    public CardapioController(RecuperarCardapioUC recuperarCardapioUC,
+                              RecuperaListaCardapiosUC recuperaListaCardapiosUC) {
+        this.recuperarCardapioUC = recuperarCardapioUC;
+        this.recuperaListaCardapiosUC = recuperaListaCardapiosUC;
     }
 
     @GetMapping("/{id}")
-    @CrossOrigin("*")
-    public CardapioPresenter recuperaCardapio(@PathVariable(value="id")long id){
-        CardapioResponse cardapioResponse = recuperaCardapioUC.run(id);
-        Set<Long> conjIdSugestoes = new HashSet<>(cardapioResponse.getSugestoesDoChef().stream()
-            .map(produto->produto.getId())
-            .toList());
-        CardapioPresenter cardapioPresenter = new CardapioPresenter(cardapioResponse.getCardapio().getCabecalhoCardapio().titulo());
-        for(Produto produto:cardapioResponse.getCardapio().getProdutos()){
-            boolean sugestao = conjIdSugestoes.contains(produto.getId());
-            cardapioPresenter.insereItem(produto.getId(), produto.getDescricao(), produto.getPreco(), sugestao);
+    public ResponseEntity<CardapioPresenter> recuperarCardapio(@PathVariable long id) {
+        CardapioResponse response = recuperarCardapioUC.run(id);
+        Set<Long> sugestoes = new HashSet<>(response.getSugestoesDoChef()
+                .stream().map(Produto::getId).toList());
+
+        CardapioPresenter presenter = new CardapioPresenter(response.getCardapio().getTitulo());
+        for (Produto produto : response.getCardapio().getProdutos()) {
+            presenter.insereItem(produto.getId(), produto.getDescricao(),
+                    produto.getPreco(), sugestoes.contains(produto.getId()));
         }
-        return cardapioPresenter;
+
+        return ResponseEntity.ok(presenter);
     }
 
     @GetMapping("/lista")
-    @CrossOrigin("*")
-    public List<CabecalhoCardapioPresenter> recuperaListaCardapios(){
-         List<CabecalhoCardapioPresenter> lstCardapios = 
-            recuperaListaCardapioUC.run().cabecalhos().stream()
-            .map(cabCar -> new CabecalhoCardapioPresenter(cabCar.id(),cabCar.titulo()))
-            .toList();
-         return lstCardapios;
+    public ResponseEntity<List<CabecalhoCardapioPresenter>> listarCardapios() {
+        return ResponseEntity.ok(
+                recuperaListaCardapiosUC.run().cabecalhos().stream()
+                        .map(c -> new CabecalhoCardapioPresenter(c.id(), c.titulo()))
+                        .toList()
+        );
     }
 }
-
