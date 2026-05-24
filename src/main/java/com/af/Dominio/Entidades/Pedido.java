@@ -1,4 +1,4 @@
-﻿package com.af.Dominio.Entidades;
+package com.af.Dominio.Entidades;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,13 +12,15 @@ public class Pedido {
         PREPARACAO,
         PRONTO,
         TRANSPORTE,
-        ENTREGUE
+        ENTREGUE,
+        CANCELADO
     }
     private long id;
     private Cliente cliente;
     private LocalDateTime dataHoraPagamento;
     private List<ItemPedido> itens;
     private Status status;
+    private List<Status> historicoStatus = new java.util.ArrayList<>();
     private double valor;
     private double impostos;
     private double desconto;
@@ -31,6 +33,7 @@ public class Pedido {
         this.dataHoraPagamento = dataHoraPagamento;
         this.itens = itens;
         this.status = status;
+        this.historicoStatus.add(status);
         this.valor = valor;
         this.impostos = impostos;
         this.desconto = desconto;
@@ -39,6 +42,10 @@ public class Pedido {
 
     public long getId() {
         return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public Cliente getCliente() {
@@ -59,6 +66,11 @@ public class Pedido {
 
     public void setStatus(Status status){
         this.status = status;
+        this.historicoStatus.add(status);
+    }
+
+    public List<Status> getHistoricoStatus() {
+        return historicoStatus;
     }
 
     public double getValor() {
@@ -77,4 +89,3 @@ public class Pedido {
         return valorCobrado;
     }
 }
-
