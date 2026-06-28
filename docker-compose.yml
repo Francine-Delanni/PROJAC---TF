@@ -30,6 +30,39 @@ services:
     networks:
       - pizzaria-net
 
+  pizzaria-service:
+    build:
+      context: ./pizzaria-service
+    container_name: pizzaria-service
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - IMPOSTO_CODIGO=LEI_10
+      - DESCONTO_CODIGO=FIDELIDADE
+    depends_on:
+      - eureka-server
+      - rabbitmq
+      - estoque-service
+    networks:
+      - pizzaria-net
+
+  gateway:
+    build:
+      context: ./gateway
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka
+    depends_on:
+      - eureka-server
+      - pizzaria-service
+      - estoque-service
+    networks:
+      - pizzaria-net
+
   entregas-service:
     build:
       context: ./entregas-service
