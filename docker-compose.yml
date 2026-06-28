@@ -1,0 +1,47 @@
+services:
+  eureka-server:
+    build:
+      context: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - pizzaria-net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - pizzaria-net
+
+  estoque-service:
+    build:
+      context: ./estoque-service
+    container_name: estoque-service
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka
+    depends_on:
+      - eureka-server
+    networks:
+      - pizzaria-net
+
+  entregas-service:
+    build:
+      context: ./entregas-service
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - eureka-server
+      - rabbitmq
+    networks:
+      - pizzaria-net
+
+networks:
+  pizzaria-net:
+    driver: bridge
