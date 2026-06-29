@@ -1,21 +1,12 @@
 package com.af.Dominio.Servicos;
 
-import org.springframework.stereotype.Service;
+public interface EstoqueService {
 
-@Service
-public class EstoqueService {
+    boolean verificarDisponibilidade(Long produtoId, int quantidade);
 
-    public boolean verificarDisponibilidade(Long ingredienteId, int quantidade) {
-        return true;
-    }
+    void baixarEstoque(Long produtoId, int quantidade);
 
-    public void baixarEstoque(Long ingredienteId, int quantidade) {
-        System.out.printf("Baixando do estoque (FAKE): ingrediente %d, quantidade %d%n",
-                ingredienteId, quantidade);
-    }
-
-    public boolean temEstoqueDisponivelParaCardapio(Long cardapioId) {
-        System.out.printf("Verificando estoque do cardápio %d (FAKE): sempre disponível.%n", cardapioId);
+    default boolean temEstoqueDisponivelParaCardapio(Long cardapioId) {
         return true;
     }
 }

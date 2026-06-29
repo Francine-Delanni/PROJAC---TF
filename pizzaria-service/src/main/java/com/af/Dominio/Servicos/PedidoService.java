@@ -8,6 +8,7 @@ import com.af.Dominio.Entidades.Cliente;
 import com.af.Dominio.Entidades.Pedido;
 import com.af.Dominio.Entidades.Produto;
 import com.af.Dominio.Entidades.ItemPedido;
+import com.af.Dominio.Excecoes.EstoqueInsuficienteException;
 
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,9 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.af.Dominio.Servicos.Precificacao.ServicoDeDescontos;
 import com.af.Dominio.Servicos.Precificacao.ServicoDeImpostos;
@@ -56,6 +59,8 @@ public class PedidoService {
                 "");
 
         var itens = new ArrayList<ItemPedido>();
+        var quantidadesPorProduto = new LinkedHashMap<Long, Integer>();
+        var descricoesPorProduto = new LinkedHashMap<Long, String>();
         double soma = 0.0;
 
         for (SubmeterPedidoRequest.Item it : req.getItens()) {
@@ -68,16 +73,15 @@ public class PedidoService {
                 throw new IllegalArgumentException("Produto inválido: " + it.getProdutoId());
             }
 
-            boolean disponivel = estoqueService.verificarDisponibilidade(produto.getId(), it.getQuantidade());
-            if (!disponivel) {
-                throw new IllegalStateException(
-                        "Pedido rejeitado: falta de estoque para o produto " + produto.getDescricao());
-            }
+            quantidadesPorProduto.merge(produto.getId(), it.getQuantidade(), Integer::sum);
+            descricoesPorProduto.putIfAbsent(produto.getId(), produto.getDescricao());
 
             double precoUnit = produto.getPreco() / 100.0;
             soma += precoUnit * it.getQuantidade();
             itens.add(new ItemPedido(produto, it.getQuantidade()));
         }
+
+        verificarEstoqueDisponivel(quantidadesPorProduto, descricoesPorProduto);
 
         double desconto = servicoDeDescontos.calcular(req.getCpf(), soma);
         double impostos = servicoDeImpostos.calcular(soma - desconto);
@@ -97,6 +101,7 @@ public class PedidoService {
                 soma, impostos, desconto, total);
 
         var salvo = pedidoRepo.save(pedido);
+        baixarEstoque(quantidadesPorProduto);
         return montarResponse(salvo);
     }
 
@@ -184,6 +189,26 @@ public class PedidoService {
 
     private static double round2(double v) {
         return Math.round(v * 100.0) / 100.0;
+    }
+
+    private void verificarEstoqueDisponivel(Map<Long, Integer> quantidadesPorProduto,
+                                            Map<Long, String> descricoesPorProduto) {
+        for (Map.Entry<Long, Integer> item : quantidadesPorProduto.entrySet()) {
+            Long produtoId = item.getKey();
+            int quantidade = item.getValue();
+
+            if (!estoqueService.verificarDisponibilidade(produtoId, quantidade)) {
+                String descricao = descricoesPorProduto.getOrDefault(produtoId, String.valueOf(produtoId));
+                throw new EstoqueInsuficienteException(
+                        "Pedido rejeitado: falta de estoque para o produto " + descricao);
+            }
+        }
+    }
+
+    private void baixarEstoque(Map<Long, Integer> quantidadesPorProduto) {
+        for (Map.Entry<Long, Integer> item : quantidadesPorProduto.entrySet()) {
+            estoqueService.baixarEstoque(item.getKey(), item.getValue());
+        }
     }
 
     private static BigDecimal toMoney(double v) {
