@@ -57,7 +57,16 @@ public class PedidoRepositoryJDBC implements PedidoRepository {
 
     @Override
     public Optional<Pedido> findById(long id) {
-        String sql = "SELECT * FROM pedidos WHERE id = ?";
+        String sql = """
+            SELECT p.*,
+                   c.nome AS cliente_nome,
+                   c.celular AS cliente_celular,
+                   c.endereco AS cliente_endereco,
+                   c.email AS cliente_email
+            FROM pedidos p
+            LEFT JOIN clientes c ON c.cpf = p.cliente_cpf
+            WHERE p.id = ?
+        """;
         List<Pedido> pedidos = jdbcTemplate.query(sql, ps -> ps.setLong(1, id), this::mapRowToPedido);
         return pedidos.stream().findFirst();
     }
@@ -124,10 +133,10 @@ public class PedidoRepositoryJDBC implements PedidoRepository {
     private Pedido mapRowToPedido(ResultSet rs, int rowNum) throws SQLException {
         Cliente cliente = new Cliente(
             rs.getString("cliente_cpf"),
-            null,
-            null,
-            null,
-            null,
+            getOptionalString(rs, "cliente_nome"),
+            getOptionalString(rs, "cliente_celular"),
+            getOptionalString(rs, "cliente_endereco"),
+            getOptionalString(rs, "cliente_email"),
             null
         );
 
@@ -142,5 +151,15 @@ public class PedidoRepositoryJDBC implements PedidoRepository {
                 rs.getBigDecimal("desconto") != null ? rs.getBigDecimal("desconto").doubleValue() : 0.0,
                 rs.getBigDecimal("valor_cobrado") != null ? rs.getBigDecimal("valor_cobrado").doubleValue() : 0.0
         );
+    }
+
+    private String getOptionalString(ResultSet rs, String columnLabel) throws SQLException {
+        var metaData = rs.getMetaData();
+        for (int i = 1; i <= metaData.getColumnCount(); i++) {
+            if (columnLabel.equalsIgnoreCase(metaData.getColumnLabel(i))) {
+                return rs.getString(columnLabel);
+            }
+        }
+        return null;
     }
 }

@@ -31,17 +31,20 @@ public class PedidoService {
     private final ServicoDeImpostos servicoDeImpostos;
     private final ServicoDeDescontos servicoDeDescontos;
     private final EstoqueService estoqueService;
+    private final EntregaPublisher entregaPublisher;
 
     public PedidoService(ProdutosRepository produtoRepo,
             PedidoRepository pedidoRepo,
             ServicoDeImpostos servicoDeImpostos,
             ServicoDeDescontos servicoDeDescontos,
-            EstoqueService estoqueService) {
+            EstoqueService estoqueService,
+            EntregaPublisher entregaPublisher) {
         this.produtoRepo = produtoRepo;
         this.pedidoRepo = pedidoRepo;
         this.servicoDeDescontos = servicoDeDescontos;
         this.servicoDeImpostos = servicoDeImpostos;
         this.estoqueService = estoqueService;
+        this.entregaPublisher = entregaPublisher;
     }
 
     // UC4: Submeter pedido para aprovação
@@ -161,6 +164,7 @@ public class PedidoService {
         }
 
         var atualizado = pedidoRepo.findById(pedidoId).orElse(pedido);
+        entregaPublisher.publicarPedidoPago(atualizado);
         return montarResponse(atualizado);
     }
 

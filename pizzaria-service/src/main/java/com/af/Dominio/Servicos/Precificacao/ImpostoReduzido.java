@@ -5,25 +5,25 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ImpostoUnico implements PoliticaDeImposto {
+public class ImpostoReduzido implements PoliticaDeImposto {
 
     @Override
     public String codigo() {
-        return "LEI_10";
+        return "REDUZIDO";
     }
 
     @Override
     public List<String> codigos() {
-        return List.of("LEI_10", "PADRAO");
+        return List.of("REDUZIDO", "LEI_5");
     }
 
     @Override
     public String nome() {
-        return "Imposto padrao de 10%";
+        return "Imposto reduzido de 5%";
     }
 
     @Override
     public double calcular(double base) {
-        return base * 0.10;
+        return base * 0.05;
     }
 }

@@ -23,4 +23,10 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of("erro", ex.getMessage()));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("erro", ex.getMessage()));
+    }
 }
