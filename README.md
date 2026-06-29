@@ -1,172 +1,281 @@
-# Pizzaria – Backend do Sistema de Pedidos
+# Pizzaria AF - Parte 2
 
-![Java](https://img.shields.io/badge/Java-21-blue?logo=java&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-brightgreen?logo=spring&logoColor=white)
-![Vaadin](https://img.shields.io/badge/Vaadin-24-purple?logo=vaadin&logoColor=white)
-![Maven](https://img.shields.io/badge/Maven-Project-red?logo=apachemaven&logoColor=white)
+Projeto de pizzaria em arquitetura de microservicos com Spring Boot, Eureka, Gateway, RabbitMQ e Docker Compose.
 
----
+## Arquitetura
 
-**Disciplina:** Projeto e Arquitetura de Software  
-**Professor:** Bernardo Copstein  
-**Integrantes:**
-- Alice
-- Francine
+Servicos principais:
 
----
+- `eureka-server`: service discovery. Os demais servicos registram suas instancias nele.
+- `gateway`: ponto de entrada HTTP da aplicacao. Centraliza a autenticacao HTTP Basic.
+- `pizzaria-service`: regras principais da pizzaria, cardapio, clientes, pedidos, pagamento, impostos, descontos, integracao com estoque e publicacao de mensagens de entrega.
+- `estoque-service`: microsservico de estoque com banco proprio H2/JPA.
+- `entregas-service`: consumidor RabbitMQ responsavel por processar pedidos pagos. Pode subir com multiplas instancias.
+- `rabbitmq`: broker de mensagens usado entre `pizzaria-service` e `entregas-service`.
 
-## Descrição
+Fluxo principal:
 
-O projeto implementa o backend de um sistema de gestão de pedidos de uma pizzaria online. A aplicação permite cadastro e autenticação de clientes, consulta ao cardápio, submissão de pedidos, cálculo de valores com impostos e descontos, acompanhamento de status, cancelamento, pagamento e listagem de pedidos entregues.
+1. O cliente acessa a aplicacao pelo `gateway`.
+2. O `gateway` autentica rotas protegidas e roteia para `pizzaria-service` ou `estoque-service`.
+3. Ao submeter pedido, o `pizzaria-service` consulta o `estoque-service` pelo Eureka/load balancing.
+4. Ao pagar pedido, o `pizzaria-service` publica mensagem na fila RabbitMQ.
+5. Uma das instancias do `entregas-service` consome a mensagem.
 
-A estrutura segue a proposta de **arquitetura limpa**, separando apresentação, aplicação, domínio e adaptadores de dados.
+## Subir o ambiente
 
----
+Na raiz do projeto:
 
-## Domínio Java do projeto
-
-O domínio/pacote principal do projeto foi ajustado para:
-
-```txt
-com.af
+```powershell
+docker compose down -v
+docker compose up --build -d --scale entregas-service=3
 ```
 
-Esse nome representa as integrantes **Alice** e **Francine**.
+Conferir containers:
 
----
-
-## Tecnologias utilizadas
-
-- Java 21
-- Spring Boot 3.2
-- Vaadin 24
-- Maven
-- H2 Database
-- Spring Security
-
----
-
-## Como rodar o projeto
-
-### Pré-requisitos
-
-- Java 21 ou superior
-- Maven
-
-### Execução
-
-```bash
-mvn clean install
-mvn spring-boot:run
+```powershell
+docker compose ps
 ```
 
-A aplicação sobe, por padrão, em:
+## Credenciais
 
-```txt
-http://localhost:8080
+Gateway HTTP Basic:
+
+- Usuario: `admin`
+- Senha: `admin123`
+
+RabbitMQ Management:
+
+- Usuario: `guest`
+- Senha: `guest`
+
+## URLs
+
+- Eureka: `http://localhost:8761`
+- Gateway: `http://localhost:8080`
+- RabbitMQ Management: `http://localhost:15672`
+- Pizzaria direto: `http://localhost:8081`
+- Estoque direto: `http://localhost:8082`
+
+Use preferencialmente o Gateway para testar a aplicacao.
+
+## Endpoints principais via Gateway
+
+### Cardapio
+
+```http
+GET /pizzaria/api/cardapio
 ```
 
-Console H2:
+Exemplo:
 
-```txt
-http://localhost:8080/h2-console
+```powershell
+curl.exe -u admin:admin123 http://localhost:8080/pizzaria/api/cardapio
 ```
 
-Configuração do banco H2:
+### Cadastro de cliente
 
-```txt
-JDBC URL: jdbc:h2:file:./data/pizzaria_db
-User: sa
-Password: vazio
+Rota publica, sem autenticacao:
+
+```http
+POST /pizzaria/public/clientes/registrar
 ```
 
----
+Exemplo:
 
-## Casos de uso implementados
-
-| UC | Descrição |
-|---|---|
-| UC1 | Registrar cliente no sistema |
-| UC2 | Autenticar cliente no sistema |
-| UC3 | Carregar cardápio autenticado |
-| UC4 | Submeter pedido para aprovação |
-| UC5 | Solicitar status de pedido |
-| UC6 | Cancelar pedido aprovado e ainda não pago |
-| UC7 | Pagar pedido e encaminhar para cozinha/entrega |
-| UC8 | Listar pedidos entregues entre duas datas |
-| UC9 | Listar pedidos de um cliente entregues entre duas datas |
-
----
-
-## Cronograma do enunciado
-
-| Data | Casos de uso |
-|---|---|
-| 11/05/2026 | UC3 e UC4 |
-| 13/05/2026 | UC5 e UC6 |
-| 18/05/2026 | UC1, UC2 e UC7 |
-| 20/05/2026 | Entrega final com UC8 e UC9 |
-
----
-
-## Endpoints principais para teste
-
-### Registrar cliente
-
-```txt
-POST /public/clientes/registrar
+```powershell
+curl.exe -H "Content-Type: application/json" `
+  -X POST http://localhost:8080/pizzaria/public/clientes/registrar `
+  -d "{\"cpf\":\"99900000001\",\"nome\":\"Cliente Teste\",\"celular\":\"51999999999\",\"endereco\":\"Rua Teste, 100\",\"email\":\"cliente.teste@af.local\",\"senha\":\"123456\"}"
 ```
 
-### Login
+### Criar pedido
 
-```txt
-POST /public/clientes/login
+Rota protegida pelo Gateway:
+
+```http
+POST /pizzaria/api/pedidos/submeter
 ```
 
-### Carregar cardápio
+Exemplo:
 
-```txt
-GET /api/cardapio/1
-```
-
-### Submeter pedido
-
-```txt
-POST /api/pedidos/submeter
-```
-
-### Consultar status
-
-```txt
-GET /api/pedidos/status/{id}?cpf={cpf}
-```
-
-### Cancelar pedido
-
-```txt
-DELETE /api/pedidos/cancel/{id}
+```powershell
+curl.exe -u admin:admin123 -H "Content-Type: application/json" `
+  -X POST http://localhost:8080/pizzaria/api/pedidos/submeter `
+  -d "{\"cpf\":\"99900000001\",\"nome\":\"Cliente Teste\",\"celular\":\"51999999999\",\"endereco\":\"Rua Teste, 100\",\"email\":\"cliente.teste@af.local\",\"itens\":[{\"produtoId\":1,\"quantidade\":1}]}"
 ```
 
 ### Pagar pedido
 
-```txt
-POST /api/pedidos/pagamento/{id}?cpf={cpf}
+Rota protegida pelo Gateway:
+
+```http
+POST /pizzaria/api/pedidos/pagamento/{id}?cpf={cpf}
 ```
 
-### Listar pedidos entregues
+Exemplo:
 
-```txt
-GET /api/pedidos/entregues?inicio=2026-05-01&fim=2026-05-31
+```powershell
+curl.exe -u admin:admin123 -X POST "http://localhost:8080/pizzaria/api/pedidos/pagamento/1?cpf=99900000001"
 ```
 
-### Listar pedidos entregues de um cliente
+### Estoque
 
-```txt
-GET /api/pedidos/entregues/cliente/{cpf}?inicio=2026-05-01&fim=2026-05-31
+Rota protegida pelo Gateway:
+
+```http
+GET /estoque/api/estoque
+GET /estoque/api/estoque/{produtoId}/disponivel?quantidade={quantidade}
 ```
 
----
+Exemplos:
 
-## Observação sobre autenticação
+```powershell
+curl.exe -u admin:admin123 http://localhost:8080/estoque/api/estoque
+curl.exe -u admin:admin123 "http://localhost:8080/estoque/api/estoque/1/disponivel?quantidade=1"
+```
 
-Os endpoints `/api/**` são protegidos por Spring Security. Para testar manualmente, use HTTP Basic Auth com o email e a senha cadastrados para o cliente.
+### Descontos
+
+Listar descontos:
+
+```http
+GET /pizzaria/api/precificacao/descontos
+```
+
+Trocar desconto ativo:
+
+```http
+PUT /pizzaria/api/precificacao/descontos/ativo?codigo={codigo}
+```
+
+Codigos esperados:
+
+- `FIDELIDADE`
+- `SEM_DESCONTO`
+- `NENHUM`
+- `PERCENTUAL_5`
+- `VALOR_MINIMO`
+
+Exemplos:
+
+```powershell
+curl.exe -u admin:admin123 http://localhost:8080/pizzaria/api/precificacao/descontos
+curl.exe -u admin:admin123 -X PUT "http://localhost:8080/pizzaria/api/precificacao/descontos/ativo?codigo=PERCENTUAL_5"
+```
+
+## Imposto por env/config
+
+A politica de imposto ativa e definida na inicializacao do `pizzaria-service`.
+
+Opcoes:
+
+- `IMPOSTO_TIPO=PADRAO`
+- `IMPOSTO_TIPO=REDUZIDO`
+- `app.imposto.codigo=LEI_10`
+- `app.imposto.codigo=LEI_5`
+
+Exemplo local:
+
+```powershell
+$env:IMPOSTO_TIPO="REDUZIDO"
+mvn spring-boot:run
+```
+
+No Docker Compose atual, o valor configurado e:
+
+```yaml
+IMPOSTO_CODIGO=LEI_10
+```
+
+## Roteiro de teste final
+
+1. Conferir containers:
+
+```powershell
+docker compose ps
+```
+
+2. Verificar Eureka:
+
+```powershell
+curl.exe http://localhost:8761
+```
+
+3. Rota protegida sem autenticacao deve retornar `401`:
+
+```powershell
+curl.exe -i http://localhost:8080/pizzaria/api/cardapio
+```
+
+4. Rota protegida com autenticacao deve retornar `200`:
+
+```powershell
+curl.exe -i -u admin:admin123 http://localhost:8080/pizzaria/api/cardapio
+```
+
+5. Cadastrar cliente:
+
+```powershell
+curl.exe -H "Content-Type: application/json" `
+  -X POST http://localhost:8080/pizzaria/public/clientes/registrar `
+  -d "{\"cpf\":\"99900000001\",\"nome\":\"Cliente Teste\",\"celular\":\"51999999999\",\"endereco\":\"Rua Teste, 100\",\"email\":\"cliente.teste@af.local\",\"senha\":\"123456\"}"
+```
+
+6. Consultar estoque antes:
+
+```powershell
+curl.exe -u admin:admin123 http://localhost:8080/estoque/api/estoque
+```
+
+7. Criar pedido:
+
+```powershell
+curl.exe -u admin:admin123 -H "Content-Type: application/json" `
+  -X POST http://localhost:8080/pizzaria/api/pedidos/submeter `
+  -d "{\"cpf\":\"99900000001\",\"nome\":\"Cliente Teste\",\"celular\":\"51999999999\",\"endereco\":\"Rua Teste, 100\",\"email\":\"cliente.teste@af.local\",\"itens\":[{\"produtoId\":1,\"quantidade\":1}]}"
+```
+
+8. Consultar estoque depois:
+
+```powershell
+curl.exe -u admin:admin123 http://localhost:8080/estoque/api/estoque
+```
+
+9. Pedido sem estoque deve falhar:
+
+```powershell
+curl.exe -i -u admin:admin123 -H "Content-Type: application/json" `
+  -X POST http://localhost:8080/pizzaria/api/pedidos/submeter `
+  -d "{\"cpf\":\"99900000001\",\"nome\":\"Cliente Teste\",\"celular\":\"51999999999\",\"endereco\":\"Rua Teste, 100\",\"email\":\"cliente.teste@af.local\",\"itens\":[{\"produtoId\":1,\"quantidade\":9999}]}"
+```
+
+10. Pagar pedido:
+
+```powershell
+curl.exe -u admin:admin123 -X POST "http://localhost:8080/pizzaria/api/pedidos/pagamento/{id}?cpf=99900000001"
+```
+
+11. Verificar logs do `entregas-service` consumindo RabbitMQ:
+
+```powershell
+docker compose logs --tail=200 entregas-service
+```
+
+Procure mensagens como:
+
+- `Instancia de entrega recebeu pedido`
+- `Pedido entregue pela instancia atual`
+
+## Script de teste final
+
+Foi criado um script simples para automatizar o roteiro:
+
+```powershell
+.\scripts\teste-final.ps1
+```
+
+Ele assume que o ambiente ja foi iniciado com:
+
+```powershell
+docker compose up --build -d --scale entregas-service=3
+```
